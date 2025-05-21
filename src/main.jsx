@@ -115,12 +115,53 @@ const detectCSPViolation = () => {
     });
 };
 
+const determineJsonData = async () => {
+    // 1. Attempt to load from embedded POST data
+    try {
+        const postDataElement = document.querySelector('script[type="application/json"]#post-data');
+        if (postDataElement && postDataElement.textContent) {
+            const parsedJson = parseJson(postDataElement.textContent);
+            console.log("JSON data successfully loaded from embedded #post-data");
+            return parsedJson;
+        }
+    } catch (error) {
+        console.error("Failed to parse JSON from #post-data:", error);
+    }
+
+    // 2. Attempt to load from URL query parameter 'input'
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const inputParam = urlParams.get('input');
+        if (inputParam) {
+            const parsedJson = parseJson(inputParam);
+            console.log("JSON data successfully loaded from 'input' query parameter");
+            return parsedJson;
+        }
+    } catch (error) {
+        console.error("Failed to parse JSON from 'input' query parameter:", error);
+    }
+
+    // 3. Attempt to load from existing page content (fallback)
+    try {
+        const content = document.body?.innerText?.trim();
+        if (content) {
+            const parsedJson = parseJson(content);
+            console.log("JSON data successfully loaded from document.body.innerText");
+            return parsedJson;
+        }
+    } catch (error) {
+        console.error("Failed to parse JSON from document.body.innerText:", error);
+    }
+
+    // 4. Default/Error State
+    console.log("No valid JSON data source found.");
+    return null;
+};
+
 (async () => {
     detectCSPViolation();
     try {
-        let content = document.body?.innerText;
-        content = content?.trim();
-        const jsonData = parseJson(content);
+        const jsonData = await determineJsonData();
         window.json = jsonData;
         window.extensionOptions = await getOptions();
         applyOptionsIfChromeExtensionPage(window.extensionOptions);

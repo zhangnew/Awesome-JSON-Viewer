@@ -13,11 +13,13 @@ import './css/style.scss';
 class App extends Component {
     constructor(props) {
         super(props);
-        window.json = props.json;
+        const initialJson = props.json || {}; // Use empty object if props.json is null/undefined
+        window.json = initialJson;
+        this.originalJSONRef = React.createRef(initialJson);
         this.state = {
             selectedTab: 'tree',
-            json: props.json,
-            selectedJSON: props.json,
+            json: initialJson,
+            selectedJSON: initialJson,
             isSearchBarVisible: false,
         };
         this.showLogInConsole();
@@ -28,7 +30,6 @@ class App extends Component {
         this.restoreOriginalJSON = this.restoreOriginalJSON.bind(this);
         this.tooltip = React.createRef();
         this.intervalIdRef = React.createRef();
-        this.originalJSONRef = React.createRef(props.json);
     }
 
     changeTabSelection(tab) {
