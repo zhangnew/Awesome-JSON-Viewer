@@ -1,0 +1,59 @@
+name: Build and Release JSON Viewer Pro
+
+on:
+  workflow_dispatch: # Allows manual triggering
+  push:
+    tags:
+      - 'v*' # Triggers on version tags like v1.0, v2.0.1, etc.
+
+jobs:
+  build_and_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm' # Optional: caching npm dependencies
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build and package
+        run: npm run package
+
+      - name: Archive web static files
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-static-files
+          path: |
+            dist/
+            index.html
+            favicon.ico
+
+      - name: Archive Chrome extension ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension-zip
+          path: chrome-extension/chrome-extension.zip
+
+      - name: Zip web static files for release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: zip -r web-static.zip ./dist ./index.html ./favicon.ico
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            chrome-extension/chrome-extension.zip
+            web-static.zip
